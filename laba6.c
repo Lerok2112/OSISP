@@ -67,6 +67,8 @@ int main(void) {
 		kill(result, SIGUSR1);
 		sleep(1);
 
+		printf("Parent gets:\n");
+		printf("%s\n\n", region[5]);
 		if (munmap(region, pagesize) < 0)
 		{
 			perror("Could not munmap");
@@ -85,17 +87,20 @@ int main(void) {
 		for (int i = 0; i < 5; i++) {
 			printf("%s \n", stringg[i]);
 		}
+	
 		for (int i = 0; i < 5; i++) {
 			if (is_palindrome(stringg[i])) {
 				printf("\nWe found palindrome :\n");
 				printf("%s\n\n", stringg[i]);
-
-
+				region[5] = stringg[i];
 			}
 		}
+
+		printf("Shared file to parent process: %s \n", region[5]);
+
+
 		printf("child process exit\n");
 		exit(0);
-
 	}
 	return 0;
 }
