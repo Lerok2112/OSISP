@@ -3,29 +3,29 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <string.h>
 #include <stdlib.h>
-int is_palindrome(char* s)
+int factorial(int chislo)
 {
-	for (int i = 0, j = strlen(s) - 1; i < j; ++i, --j)
-		if (s[i] != s[j]) return 0;
-	return 1;
+	if (chislo < 0)
+		return 0;
+	if (chislo == 0)
+		return 1;
+	else return chislo * factorial(chislo - 1);
 }
+
 void handler(int i)
 {
-	printf("\nparent sent signal to the child process \n\n");
+	printf("parent sent signal to the child process \n");
 }
 
 int main(void) {
 	signal(SIGUSR1, handler);
 	int fd; size_t pagesize = getpagesize();
-	char **region;
-	char * str1 = "hello";
-	char * str2 = "lala";
-	char * str3 = "reer";
-	char * str4 = "lerok";
-	char * str5 = "wqwq";
+	int *region;
+	int chislo;
+	printf("Input value: ");
 
+	scanf("%i", &chislo);
 	//create file for shared access
 	if ((fd = open("myfile", O_RDWR | O_CREAT | O_TRUNC, 0777)) < 0) {
 		printf("Can\'t open file\n");
@@ -33,7 +33,7 @@ int main(void) {
 	}
 	//empty file is not mapping
 	write(fd, "/0", sizeof(char));
-	region = (char**)mmap(
+	region = (int*)mmap(
 		NULL, // Map from the start of the null page
 		pagesize, // for one page length
 		PROT_READ | PROT_WRITE, // to a private block of
@@ -44,12 +44,6 @@ int main(void) {
 		perror("Could not mmap");
 		return -1;
 	}
-	//write strings
-	region[0] = str1;
-	region[1] = str2;
-	region[2] = str3;
-	region[3] = str4;
-	region[4] = str5;
 
 	//create process
 	int result = fork();
@@ -59,16 +53,17 @@ int main(void) {
 	}
 	else if (result > 0) {
 		//parent process
-		printf("Shared file (in parent): \n");
-		for (int i = 0; i < 5; i++) {
-			printf("%s \n", region[i]);
-		}
+
+		region[0] = chislo;
+		printf("Shared file (in parent): ");
+		printf("%i \n", region[0]);
+
 		//parent process is stopped, jumping into child process
 		kill(result, SIGUSR1);
 		sleep(1);
 
-		printf("Parent gets:\n");
-		printf("%s\n\n", region[5]);
+		printf("Parent gets: ");
+		printf("%i\n", region[0]);
 		if (munmap(region, pagesize) < 0)
 		{
 			perror("Could not munmap");
@@ -79,25 +74,11 @@ int main(void) {
 	}
 	else {
 		//child process
-		char ** stringg[5][100];
-		for (int i = 0; i < 5; i++) {
-			strcpy(stringg[i], region[i]);
-		}
-		printf("Shared file (in child): \n");
-		for (int i = 0; i < 5; i++) {
-			printf("%s \n", stringg[i]);
-		}
-	
-		for (int i = 0; i < 5; i++) {
-			if (is_palindrome(stringg[i])) {
-				printf("\nWe found palindrome :\n");
-				printf("%s\n\n", stringg[i]);
-				region[5] = stringg[i];
-			}
-		}
 
-		printf("Shared file to parent process: %s \n", region[5]);
-
+		printf("Shared file (in child): ");
+		printf("%i \n", region[0]);
+		region[0] = factorial(region[0]); //finding factorial
+		printf("Shared file to parent process: %i \n", region[0]);
 
 		printf("child process exit\n");
 		exit(0);
